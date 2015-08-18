@@ -2,6 +2,7 @@
 
 # TODO: paths -----
 SEQ=/usr/bin/seq
+MAIL=/usr/bin/mail
 PING=/bin/ping
 SLEEP=/bin/sleep
 IPSEC=/etc/init.d/ipsec
@@ -13,6 +14,11 @@ PROC_NAME="ipsec-mon"
 DST_IP=10.66.20.5
 DELAY=120
 declare -i RETRIES=10 
+
+# Mail data -----
+address=<MAIL ADDRESS LIST>
+subject="[Self healing] IPSEC"
+body="IPSEC daemon was failed and has been restarted at server "$(hostname)
 
 # Auxiliary functions -----
 
@@ -43,6 +49,11 @@ wait() {
 	${SLEEP} ${DELAY}
 }
 
+notify() {
+        subj="$1"; body=$2; to=$3
+        echo ${body} | mail -s  "${subj}" ${to}
+}
+
 ip_check() {
  	declare -i failures=0
 	for i in $(${SEQ} 1 ${RETRIES}); do
@@ -63,6 +74,7 @@ keep_running() {
 	ip_check; status=$?
 	if [ ${status} -ne 0 ]; then
 		syslog "ipsec has failed, restarting!"
+		notify "$subject" "$body" "$address"
 		ipsec_restart
 	fi
 }
@@ -72,7 +84,5 @@ main() {
 	keep_running 
 }
 
-
-
-# Calling main -----
+# Entry point: Calling main proc -----
 main
